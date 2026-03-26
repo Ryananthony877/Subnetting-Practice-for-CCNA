@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CCNA Full Subnetting Practice Tool</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #f5f5f3; color: #1a1a18; padding: 2rem 1rem; min-height: 100vh; }
+  h1 { font-size: 20px; font-weight: 500; margin-bottom: 1.5rem; }
+  .wrap { max-width: 700px; margin: 0 auto; font-size: 15px; }
+  .lbl { font-size: 12px; font-weight: 500; color: #888780; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+  .qbox { background: #eeeee8; border: 0.5px solid #d3d1c7; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+  .step { background: #fff; border: 0.5px solid #d3d1c7; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .step.locked { border-color: #c0dd97; background: #eaf3de; }
+  .step.locked .step-title { color: #3b6d11; }
+  .step.disabled { opacity: 0.4; pointer-events: none; }
+  .step-ref { display: flex; gap: 16px; background: #eeeee8; border-radius: 6px; padding: 6px 10px; margin-bottom: 10px; flex-wrap: wrap; align-items: center; }
+  .step-ref-item { font-size: 12px; color: #888780; }
+  .step-ref-item b { font-family: monospace; font-weight: 500; color: #1a1a18; }
+  .step-title { font-size: 18px; font-weight: 500; margin-bottom: 8px; }
+  .step-tag { font-size: 11px; font-weight: 400; padding: 2px 8px; border-radius: 10px; }
+  .tag-ccna { background: #eaf3de; color: #3b6d11; }
+  .tag-rare { background: #eeeee8; color: #888780; }
+  .step-desc { font-size: 13px; color: #888780; margin-bottom: 6px; line-height: 1.7; }
+  .step-desc b { font-weight: 500; color: #1a1a18; }
+  .hint-toggle { font-size: 12px; color: #888780; cursor: pointer; text-decoration: underline; margin-bottom: 8px; display: inline-block; }
+  .tip { font-size: 12px; color: #888780; background: #eeeee8; border-left: 3px solid #185fa5; border-radius: 0 6px 6px 0; padding: 6px 10px; margin-bottom: 10px; line-height: 1.8; display: none; }
+  .tip b { font-weight: 500; color: #1a1a18; }
+  .binary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
+  .octet-box { border: 0.5px solid #d3d1c7; border-radius: 8px; overflow: hidden; }
+  .octet-title { font-size: 11px; color: #888780; text-align: center; padding: 3px 0; border-bottom: 0.5px solid #d3d1c7; }
+  .bits-row { display: grid; grid-template-columns: repeat(8, 1fr); }
+  .bit { font-size: 13px; font-weight: 500; font-family: monospace; text-align: center; padding: 5px 2px; user-select: none; }
+  .bit-clickable { cursor: pointer; }
+  .bit-clickable:hover { opacity: 0.75; }
+  .bit-on  { background: #ddeeff; color: #185fa5; }
+  .bit-off { background: #f1efe8; color: #888780; }
+  .bit-q   { background: #f1efe8; color: #b4b2a9; }
+  .vals-row { display: grid; grid-template-columns: repeat(8, 1fr); border-top: 0.5px solid #d3d1c7; }
+  .val { font-size: 10px; color: #b4b2a9; text-align: center; padding: 3px 1px; font-family: monospace; }
+  .octet-sum { font-size: 11px; text-align: center; padding: 4px 3px; color: #888780; border-top: 0.5px solid #d3d1c7; font-family: monospace; line-height: 1.5; word-break: break-all; }
+  .mask-input-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
+  .ig { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .ig label { font-size: 11px; color: #888780; }
+  .ig input { font-family: monospace; font-size: 15px; text-align: center; width: 100%; min-width: 0; padding: 7px 4px; border: 0.5px solid #d3d1c7; border-radius: 8px; background: #fff; color: #1a1a18; outline: none; }
+  .ig input:focus { border-color: #888780; }
+  .addr-row { display: flex; align-items: center; gap: 4px; margin-bottom: 10px; flex-wrap: wrap; }
+  .addr-static { font-family: monospace; font-size: 16px; font-weight: 500; color: #888780; background: #eeeee8; border: 0.5px solid #d3d1c7; border-radius: 8px; padding: 7px 10px; }
+  .addr-dot { font-family: monospace; font-size: 16px; color: #888780; }
+  .addr-input { font-family: monospace; font-size: 16px; width: 72px; text-align: center; padding: 7px 4px; border: 0.5px solid #d3d1c7; border-radius: 8px; background: #fff; color: #1a1a18; outline: none; }
+  .addr-input:focus { border-color: #888780; }
+  .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+  .row label { font-size: 12px; color: #888780; white-space: nowrap; }
+  .row input { font-family: monospace; font-size: 15px; padding: 7px 10px; border: 0.5px solid #d3d1c7; border-radius: 8px; background: #fff; color: #1a1a18; outline: none; }
+  .row input:focus { border-color: #888780; }
+  .row input.short { width: 80px; }
+  .sfb { font-size: 13px; margin-top: 6px; line-height: 1.6; }
+  .sfb.ok  { color: #3b6d11; font-weight: 500; }
+  .sfb.err { color: #a32d2d; }
+  .btn-sm { font-size: 12px; padding: 5px 12px; background: transparent; border: 0.5px solid #b4b2a9; border-radius: 8px; cursor: pointer; color: #1a1a18; }
+  .btn-sm:hover { background: #d3d1c7; }
+  .score-bar { display: flex; gap: 12px; margin-bottom: 1.25rem; }
+  .pill { background: #eeeee8; border: 0.5px solid #d3d1c7; border-radius: 20px; padding: 4px 14px; font-size: 13px; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  button { background: transparent; border: 0.5px solid #b4b2a9; border-radius: 8px; padding: 7px 16px; font-size: 14px; cursor: pointer; color: #1a1a18; }
+  button:hover { background: #d3d1c7; }
+  .feedback { border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-top: 10px; line-height: 1.8; }
+  .fb-ok   { background: #eaf3de; border: 0.5px solid #c0dd97; color: #3b6d11; }
+  .fb-err  { background: #fcebeb; border: 0.5px solid #f7c1c1; color: #a32d2d; }
+  .fb-info { background: #e6f1fb; border: 0.5px solid #b5d4f4; color: #185fa5; }
+  .summary { background: #fff; border: 2px solid #c0dd97; border-radius: 12px; padding: 1.25rem; margin-top: 1rem; display: none; }
+  .summary-title { font-size: 16px; font-weight: 500; color: #3b6d11; margin-bottom: 12px; }
+  .summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .summary-cell { background: #eeeee8; border-radius: 8px; padding: 8px 12px; min-width: 0; }
+  .summary-label { font-size: 11px; color: #888780; margin-bottom: 3px; }
+  .summary-val { font-family: monospace; font-size: 15px; font-weight: 500; word-break: break-all; }
+  .summary-cell.full { grid-column: 1 / -1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>CCNA Full Subnetting Practice Tool</h1>
+  <div class="score-bar">
+    <div class="pill">Score: <span id="sc">0</span> / <span id="st">0</span></div>
+    <div class="pill">Streak: <span id="sk">0</span></div>
+  </div>
+
+  <div class="qbox">
+    <div class="lbl">Full subnetting — work the problem from start to finish</div>
+
+    <div id="step1" class="step">
+      <div class="step-ref">
+        <div class="step-ref-item">IP + CIDR: <b id="r1-ip">—</b></div>
+        <div class="step-ref-item" id="r1-tag"></div>
+      </div>
+      <div class="step-title">Step 1 — Subnet mask</div>
+      <div class="step-desc">Work out the subnet mask from the CIDR prefix. Click the bits to set them — pre-filled octets are already 255.</div>
+      <span class="hint-toggle" onclick="toggleHint('s1tip', this)">Show how to</span>
+      <div class="tip" id="s1tip"></div>
+      <div class="binary-grid" id="bin-grid"></div>
+      <div class="lbl" style="margin-top:4px;">Subnet mask (auto-filled from bits above)</div>
+      <div class="mask-input-row">
+        <div class="ig"><label>Octet 1</label><input id="m1" maxlength="3" /></div>
+        <div class="ig"><label>Octet 2</label><input id="m2" maxlength="3" /></div>
+        <div class="ig"><label>Octet 3</label><input id="m3" maxlength="3" /></div>
+        <div class="ig"><label>Octet 4</label><input id="m4" maxlength="3" /></div>
+      </div>
+      <div class="row"><button class="btn-sm" onclick="check(1)">Check mask</button></div>
+      <div id="fb1" class="sfb"></div>
+    </div>
+
+    <div id="step2" class="step disabled">
+      <div class="step-ref"><div class="step-ref-item">IP + CIDR: <b id="r2-ip">—</b></div><div class="step-ref-item">Mask: <b id="r2-mask">—</b></div></div>
+      <div class="step-title">Step 2 — Magic number</div>
+      <div class="step-desc">Find the interesting octet of the mask and subtract it from 256.</div>
+      <span class="hint-toggle" onclick="toggleHint('s2tip', this)">Show how to</span>
+      <div class="tip" id="s2tip"></div>
+      <div class="row">
+        <label>Interesting octet:</label>
+        <input id="s2a" class="short" placeholder="?" maxlength="3" />
+        <label>Magic number:</label>
+        <input id="s2b" class="short" placeholder="?" maxlength="4" />
+        <button class="btn-sm" onclick="check(2)">Check</button>
+      </div>
+      <div id="fb2" class="sfb"></div>
+    </div>
+
+    <div id="step3" class="step disabled">
+      <div class="step-ref"><div class="step-ref-item">IP + CIDR: <b id="r3-ip">—</b></div><div class="step-ref-item">Mask: <b id="r3-mask">—</b></div></div>
+      <div class="step-title">Step 3 — Network address</div>
+      <div class="step-desc">Look at the <b>IP address</b> — not the mask. Use the magic number to find the network octet.</div>
+      <span class="hint-toggle" onclick="toggleHint('s3tip', this)">Show how to</span>
+      <div class="tip" id="s3tip"></div>
+      <div class="lbl">Network address</div>
+      <div class="addr-row" id="s3-row"></div>
+      <div id="fb3" class="sfb"></div>
+    </div>
+
+    <div id="step4" class="step disabled">
+      <div class="step-ref"><div class="step-ref-item">IP + CIDR: <b id="r4-ip">—</b></div><div class="step-ref-item">Mask: <b id="r4-mask">—</b></div></div>
+      <div class="step-title">Step 4 — Broadcast address</div>
+      <div class="step-desc">Add the magic number to the network octet, then subtract 1.</div>
+      <span class="hint-toggle" onclick="toggleHint('s4tip', this)">Show how to</span>
+      <div class="tip" id="s4tip"></div>
+      <div class="lbl">Broadcast address</div>
+      <div class="addr-row" id="s4-row"></div>
+      <div id="fb4" class="sfb"></div>
+    </div>
+
+    <div id="step5" class="step disabled">
+      <div class="step-ref"><div class="step-ref-item">IP + CIDR: <b id="r5-ip">—</b></div><div class="step-ref-item">Mask: <b id="r5-mask">—</b></div></div>
+      <div class="step-title">Step 5 — Usable hosts</div>
+      <div class="step-desc">How many devices can be assigned an IP in this subnet?</div>
+      <span class="hint-toggle" onclick="toggleHint('s5tip', this)">Show how to</span>
+      <div class="tip" id="s5tip"></div>
+      <div class="row">
+        <label>Usable hosts:</label>
+        <input id="s5" class="short" placeholder="?" maxlength="6" />
+        <button class="btn-sm" onclick="check(5)">Check</button>
+      </div>
+      <div id="fb5" class="sfb"></div>
+    </div>
+
+    <div class="btn-row">
+      <button onclick="newQ()">New question</button>
+      <button onclick="reveal()">Show solution</button>
+    </div>
+    <div id="gfb"></div>
+
+    <div class="summary" id="summary">
+      <div class="summary-title">Complete subnet summary</div>
+      <div class="summary-grid">
+        <div class="summary-cell full"><div class="summary-label">IP address</div><div class="summary-val" id="sum-ip">—</div></div>
+        <div class="summary-cell full"><div class="summary-label">Subnet mask</div><div class="summary-val" id="sum-mask">—</div></div>
+        <div class="summary-cell"><div class="summary-label">Magic number</div><div class="summary-val" id="sum-magic">—</div></div>
+        <div class="summary-cell"><div class="summary-label">Usable hosts</div><div class="summary-val" id="sum-hosts">—</div></div>
+        <div class="summary-cell"><div class="summary-label">Network address</div><div class="summary-val" id="sum-net">—</div></div>
+        <div class="summary-cell"><div class="summary-label">Broadcast address</div><div class="summary-val" id="sum-bcast">—</div></div>
+        <div class="summary-cell"><div class="summary-label">First usable host</div><div class="summary-val" id="sum-first">—</div></div>
+        <div class="summary-cell"><div class="summary-label">Last usable host</div><div class="summary-val" id="sum-last">—</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const BIT_VALS=[128,64,32,16,8,4,2,1];
+function cidrToMask(cidr){const m=[0,0,0,0];for(let i=0;i<cidr;i++)m[Math.floor(i/8)]|=(128>>(i%8));return m;}
+function randInt(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+
+const CCNA_CIDRS=new Set([8,16,24,25,26,27,28,29,30,31,32]);
+const POOL=[];
+for(let c=1;c<=32;c++){const w=CCNA_CIDRS.has(c)?8:1;for(let i=0;i<w;i++)POOL.push(c);}
+
+function cidrLabel(cidr){
+  if([8,16,24].includes(cidr)) return {text:'CCNA anchor',cls:'tag-ccna'};
+  if([25,26,27,28,29,30].includes(cidr)) return {text:'CCNA exam favourite',cls:'tag-ccna'};
+  if(cidr===31) return {text:'CCNA — point-to-point',cls:'tag-ccna'};
+  if(cidr===32) return {text:'CCNA — host route',cls:'tag-ccna'};
+  return {text:'Rare — good to know',cls:'tag-rare'};
+}
+
+function getInterestOct(cidr){return Math.min(3,Math.floor(cidr/8));}
+function isClassful(cidr){return cidr%8===0&&cidr<=32;}
+
+let C=null,userBits=[],maskLocked=false,sc=0,st=0,sk=0;
+
+function toggleHint(tipId, btn){
+  const tip=document.getElementById(tipId);
+  const visible=tip.style.display==='block';
+  tip.style.display=visible?'none':'block';
+  btn.textContent=visible?'Show how to':'Hide how to';
+}
+
+function resetHints(){
+  ['s1tip','s2tip','s3tip','s4tip','s5tip'].forEach(id=>{
+    const tip=document.getElementById(id);
+    if(tip) tip.style.display='none';
+  });
+  document.querySelectorAll('.hint-toggle').forEach(btn=>{
+    btn.textContent='Show how to';
+  });
+}
+
+function initBits(cidr){
+  userBits=[];
+  for(let oct=0;oct<4;oct++){
+    const ones=Math.max(0,Math.min(8,cidr-oct*8));
+    userBits.push(Array(8).fill(null).map(()=>ones===8?1:null));
+  }
+}
+function isAllOnes(oct){return Math.min(8,C.cidr-oct*8)===8;}
+
+function octetSum(octIdx){
+  if(isAllOnes(octIdx)) return '255';
+  const on=userBits[octIdx].map((b,i)=>b===1?BIT_VALS[i]:null).filter(v=>v!==null);
+  if(on.length===0) return '—';
+  const total=on.reduce((s,v)=>s+v,0);
+  return on.length===1?String(total):on.join(' + ')+' = '+total;
+}
+
+function renderGrid(){
+  const grid=document.getElementById('bin-grid');
+  grid.innerHTML='';
+  for(let oct=0;oct<4;oct++){
+    const div=document.createElement('div');
+    div.className='octet-box';
+    const prefilled=isAllOnes(oct);
+    let bitsHtml='<div class="bits-row">';
+    let valsHtml='<div class="vals-row">';
+    for(let b=0;b<8;b++){
+      const val=userBits[oct][b];
+      const cls=val===1?'bit bit-on':val===0?'bit bit-off':'bit bit-q';
+      const label=val===1?'1':val===0?'0':'?';
+      if(!maskLocked&&!prefilled){
+        bitsHtml+=`<div class="${cls} bit-clickable" onclick="toggleBit(${oct},${b})">${label}</div>`;
+      } else {
+        bitsHtml+=`<div class="${cls}">${label}</div>`;
+      }
+      valsHtml+=`<div class="val">${BIT_VALS[b]}</div>`;
+    }
+    bitsHtml+='</div>'; valsHtml+='</div>';
+    div.innerHTML=`<div class="octet-title">Octet ${oct+1}${prefilled?' ✓':''}</div>${bitsHtml}${valsHtml}<div class="octet-sum">${octetSum(oct)}</div>`;
+    grid.appendChild(div);
+  }
+  syncMaskInputs();
+}
+
+function toggleBit(oct,bit){
+  if(maskLocked||isAllOnes(oct)) return;
+  const cur=userBits[oct][bit];
+  userBits[oct][bit]=(cur===null||cur===0)?1:0;
+  renderGrid();
+}
+
+function syncMaskInputs(){
+  for(let i=0;i<4;i++){
+    document.getElementById('m'+(i+1)).value=userBits[i].every(b=>b!==null)?userBits[i].reduce((s,b,j)=>s+(b===1?BIT_VALS[j]:0),0):'';
+  }
+}
+
+function buildAddrRow(rowId,prefixOcts,inputId,suffixStr,btnFn){
+  const row=document.getElementById(rowId);
+  row.innerHTML='';
+  if(prefixOcts.length>0){
+    const pre=document.createElement('div');
+    pre.className='addr-static';
+    pre.textContent=prefixOcts.join('.');
+    row.appendChild(pre);
+    const dot=document.createElement('div');
+    dot.className='addr-dot';
+    dot.textContent='.';
+    row.appendChild(dot);
+  }
+  const inp=document.createElement('input');
+  inp.className='addr-input';
+  inp.id=inputId;
+  inp.placeholder='?';
+  inp.maxLength=3;
+  row.appendChild(inp);
+  if(suffixStr){
+    const suf=document.createElement('div');
+    suf.className='addr-static';
+    suf.textContent=suffixStr;
+    row.appendChild(suf);
+  }
+  const btn=document.createElement('button');
+  btn.className='btn-sm';
+  btn.textContent='Check';
+  btn.setAttribute('onclick',btnFn);
+  row.appendChild(btn);
+}
+
+function pickExample(exclude){
+  const opts=[{oct:248,magic:8},{oct:240,magic:16},{oct:224,magic:32},{oct:192,magic:64},{oct:128,magic:128}];
+  const filtered=opts.filter(o=>o.oct!==exclude);
+  return filtered[Math.floor(Math.random()*filtered.length)];
+}
+
+function showSummary(){
+  const{mask,magic,net,bcast,hosts,ip,cidr}=C;
+  const firstHost=[...net]; firstHost[3]+=1;
+  const lastHost=[...bcast]; lastHost[3]-=1;
+  document.getElementById('sum-ip').textContent=ip.join('.')+' /'+cidr;
+  document.getElementById('sum-mask').textContent=mask.join('.');
+  document.getElementById('sum-magic').textContent=magic;
+  document.getElementById('sum-hosts').textContent=hosts;
+  document.getElementById('sum-net').textContent=net.join('.');
+  document.getElementById('sum-bcast').textContent=bcast.join('.');
+  document.getElementById('sum-first').textContent=hosts>0?firstHost.join('.'):'N/A';
+  document.getElementById('sum-last').textContent=hosts>0?lastHost.join('.'):'N/A';
+  document.getElementById('summary').style.display='block';
+}
+
+function newQ(){
+  document.getElementById('gfb').innerHTML='';
+  document.getElementById('summary').style.display='none';
+  ['s2a','s2b','s5'].forEach(id=>document.getElementById(id).value='');
+  [1,2,3,4,5].forEach(n=>document.getElementById('fb'+n).innerHTML='');
+  maskLocked=false;
+  resetHints();
+
+  const cidr=POOL[Math.floor(Math.random()*POOL.length)];
+  const mask=cidrToMask(cidr);
+  const ip=[randInt(10,223),randInt(0,254),randInt(0,254),randInt(0,254)];
+  const net=ip.map((o,i)=>o&mask[i]);
+  const bcast=net.map((o,i)=>o|(~mask[i]&0xFF));
+  const intOct=getInterestOct(cidr);
+  const intMaskVal=mask[intOct];
+  const magic=256-intMaskVal;
+  const ipVal=ip[intOct];
+  const netVal=Math.floor(ipVal/magic)*magic;
+  const hosts=Math.max(0,magic-2);
+
+  C={cidr,mask,ip,net,bcast,intOct,intMaskVal,magic,ipVal,netVal,hosts};
+  initBits(cidr);
+  renderGrid();
+
+  const ipStr=ip.join('.')+' /'+cidr;
+  const maskStr=mask.join('.');
+  const lbl=cidrLabel(cidr);
+
+  document.getElementById('r1-ip').textContent=ipStr;
+  document.getElementById('r1-tag').innerHTML=`<span class="step-tag ${lbl.cls}">${lbl.text}</span>`;
+  [2,3,4,5].forEach(n=>{
+    document.getElementById('r'+n+'-ip').textContent=ipStr;
+    document.getElementById('r'+n+'-mask').textContent=maskStr;
+  });
+
+  const onesInOct=cidr-(intOct*8);
+  document.getElementById('s1tip').innerHTML=
+    cidr<=8?`/${cidr} means <b>${cidr} ones</b> total. All ones fit in octet 1 — the rest are zeros.`:
+    cidr<=16?`/${cidr} means <b>${cidr} ones</b> total — fills octets 1 & 2 plus <b>${onesInOct}</b> bits into octet ${intOct+1}.`:
+    cidr<=24?`/${cidr} means <b>${cidr} ones</b> total — fills octets 1, 2 & 3 plus <b>${onesInOct}</b> bits into octet ${intOct+1}.`:
+    `Subtract 24 from /${cidr} → <b>${cidr-24}</b> ones go in the last octet.<br>Click ${cidr-24} bit(s) from the left, then add up their values: <b>128 · 64 · 32 · 16 · 8 · 4 · 2 · 1</b>`;
+
+  const ex=pickExample(intMaskVal);
+  document.getElementById('s2tip').innerHTML=
+    isClassful(cidr)?
+      `This is a classful prefix — every mask octet is either 255 or 0. The interesting octet is the first 0 in the mask (value = 0).<br>Magic number = 256 − 0 = <b>256</b> (a full block of 256 addresses).`:
+      `The interesting octet is the one in the mask that is not 255 or 0.<br>Magic number = <b>256 − interesting octet</b><br>Example using a <i>different</i> mask: interesting octet = ${ex.oct} → 256 − ${ex.oct} = <b>${ex.magic}</b>`;
+
+  const prefixOcts=ip.slice(0,intOct);
+  const netSuffixParts=[],bcastSuffixParts=[];
+  for(let i=intOct+1;i<4;i++){netSuffixParts.push('0');bcastSuffixParts.push('255');}
+  const netSuffix=netSuffixParts.length?'.'+netSuffixParts.join('.'):'';
+  const bcastSuffix=bcastSuffixParts.length?'.'+bcastSuffixParts.join('.'):'';
+
+  buildAddrRow('s3-row',prefixOcts,'s3-last',netSuffix,'check(3)');
+  buildAddrRow('s4-row',prefixOcts,'s4-last',bcastSuffix,'check(4)');
+
+  document.getElementById('s3tip').innerHTML=
+    `Forget the mask — you only need <b>octet ${intOct+1} of the IP (${ipVal})</b> and the <b>magic number</b>.<br><br>`+
+    `A — Divide ${ipVal} by the magic number<br>`+
+    `B — Drop everything after the decimal (e.g. 2.9 becomes 2)<br>`+
+    `C — Multiply that whole number back by the magic number<br>`+
+    `D — Enter that result in the box below.`;
+
+  document.getElementById('s4tip').innerHTML=
+    `Network octet ${intOct+1} = <b>${netVal}</b><br>`+
+    `Broadcast = ${netVal} + magic number − 1<br>`+
+    `Octets before and after stay the same as the network address.`;
+
+  document.getElementById('s5tip').innerHTML=
+    `Usable hosts = <b>Magic number − 2</b><br>`+
+    (magic===2?`For a /31 (point-to-point), hosts = 0 — these links have no usable host addresses.`:
+    `The −2 removes the network and broadcast addresses — those can never be assigned to a device.`);
+
+  [1,2,3,4,5].forEach(n=>{
+    const el=document.getElementById('step'+n);
+    el.classList.remove('locked','disabled');
+    if(n>1) el.classList.add('disabled');
+  });
+}
+
+function lock(n){
+  document.getElementById('step'+n).classList.add('locked');
+  const next=document.getElementById('step'+(n+1));
+  if(next) next.classList.remove('disabled');
+}
+
+function check(n){
+  const{mask,intMaskVal,magic,net,bcast,hosts}=C;
+  if(n===1){
+    const vals=[1,2,3,4].map(i=>parseInt(document.getElementById('m'+i).value)||0);
+    const ok=vals.every((v,i)=>v===mask[i]);
+    if(ok){
+      maskLocked=true;
+      userBits=mask.map(v=>BIT_VALS.map(b=>(v&b)?1:0));
+      renderGrid();
+      document.getElementById('fb1').className='sfb ok';
+      document.getElementById('fb1').textContent=`Correct! ${mask.join('.')}`;
+      lock(1);
+    } else {
+      document.getElementById('fb1').className='sfb err';
+      const wrongs=vals.map((v,i)=>v!==mask[i]?`Octet ${i+1}: you said ${v||'?'}, correct is ${mask[i]}`:null).filter(Boolean);
+      document.getElementById('fb1').textContent=wrongs.join(' | ');
+    }
+  }
+  else if(n===2){
+    const a=parseInt(document.getElementById('s2a').value)||0;
+    const b=parseInt(document.getElementById('s2b').value)||0;
+    if(a===intMaskVal&&b===magic){
+      document.getElementById('fb2').className='sfb ok';
+      document.getElementById('fb2').textContent=`Correct! 256 − ${intMaskVal} = ${magic}`;
+      lock(2);
+    } else {
+      document.getElementById('fb2').className='sfb err';
+      let e=[];
+      if(a!==intMaskVal) e.push(`Interesting octet: you said ${a||'?'}, correct is ${intMaskVal}`);
+      if(b!==magic) e.push(`Magic number: you said ${b||'?'}, correct is ${magic}`);
+      document.getElementById('fb2').textContent=e.join(' | ');
+    }
+  }
+  else if(n===3){
+    const ans=parseInt(document.getElementById('s3-last').value)||0;
+    if(ans===net[C.intOct]){
+      document.getElementById('fb3').className='sfb ok';
+      document.getElementById('fb3').textContent=`Correct! Network address: ${net.join('.')}`;
+      lock(3);
+    } else {
+      document.getElementById('fb3').className='sfb err';
+      document.getElementById('fb3').textContent=`Not quite. You said: ${ans||'?'} | Correct: ${net[C.intOct]}`;
+    }
+  }
+  else if(n===4){
+    const ans=parseInt(document.getElementById('s4-last').value)||0;
+    if(ans===bcast[C.intOct]){
+      document.getElementById('fb4').className='sfb ok';
+      document.getElementById('fb4').textContent=`Correct! Broadcast address: ${bcast.join('.')}`;
+      lock(4);
+    } else {
+      document.getElementById('fb4').className='sfb err';
+      document.getElementById('fb4').textContent=`Not quite. You said: ${ans||'?'} | Correct: ${bcast[C.intOct]}`;
+    }
+  }
+  else if(n===5){
+    st++;document.getElementById('st').textContent=st;
+    const ans=parseInt(document.getElementById('s5').value)||0;
+    if(ans===hosts){
+      sc++;sk++;
+      document.getElementById('sc').textContent=sc;
+      document.getElementById('sk').textContent=sk;
+      lock(5);
+      showSummary();
+      document.getElementById('gfb').innerHTML=`<div class="feedback fb-ok">All steps complete — Streak: ${sk}</div>`;
+    } else {
+      sk=0;document.getElementById('sk').textContent=sk;
+      document.getElementById('fb5').className='sfb err';
+      document.getElementById('fb5').textContent=`Not quite. You said: ${ans||'?'} | Correct: ${hosts}`;
+    }
+  }
+}
+
+function reveal(){
+  const{mask,intMaskVal,magic,net,bcast,hosts}=C;
+  maskLocked=true;
+  userBits=mask.map(v=>BIT_VALS.map(b=>(v&b)?1:0));
+  renderGrid();
+  document.getElementById('s2a').value=intMaskVal;
+  document.getElementById('s2b').value=magic;
+  const s3=document.getElementById('s3-last');
+  const s4=document.getElementById('s4-last');
+  if(s3) s3.value=net[C.intOct];
+  if(s4) s4.value=bcast[C.intOct];
+  document.getElementById('s5').value=hosts;
+  [1,2,3,4,5].forEach(n=>document.getElementById('step'+n).classList.remove('locked','disabled'));
+  showSummary();
+  document.getElementById('gfb').innerHTML=`<div class="feedback fb-info">Solution shown — study each step, then hit New question!</div>`;
+}
+
+newQ();
+</script>
+</body>
+</html>
